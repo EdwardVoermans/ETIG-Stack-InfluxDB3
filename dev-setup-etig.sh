@@ -1,6 +1,6 @@
 #!/bin/bash
 ##################################################################################################################################
-# Script Name : dev-setup-tig.sh
+# Script Name : dev-setup-etig.sh
 # Description : This script creates all required directories and sets proper permissions
 #               for the Docker Compose TIG stack (Telegraf, InfluxDB, Influx Explorer, Grafana + Nginx).
 #               It also creates init files, tokens, self signed certificates and scripts. 
@@ -9,11 +9,11 @@
 # Credits     : Suyash Joshi (sjoshi@influxdata.com) 
 #             : Github published https://github.com/InfluxCommunity/TIG-Stack-using-InfluxDB-3/tree/main
 # Created On  : 22-08-2025
-# Last Update : 17-09-2025
-# Version     : 4.0.3
+# Last Update : 30-09-2025
+# Version     : 4.2
 # Target      : tig-influx.test Development
 # Usage       :
-#   ./dev-setup-tig.sh [--regenerate-creds] 
+#   ./dev-setup-etig.sh [--regenerate-creds] 
 #
 # Requirements:
 #   - Docker must be setup and working
