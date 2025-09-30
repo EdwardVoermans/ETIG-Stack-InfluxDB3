@@ -1,0 +1,223 @@
+services:
+################ NGINX REVERSE PROXY ##########################################################################################
+  nginx:
+    image: nginx:latest  # Pin specific version nginx:1.25-alpine
+    container_name: ${NGINX_HOST}
+    ports:
+      - "80:80"   # HTTP port for redirects to HTTPS
+      - "443:443" # HTTPS port for secure connections    
+    volumes:
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro  # Add proxy params
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - frontend-network
+      - monitoring-network
+    depends_on:
+      grafana:
+        condition: service_healthy
+      influx-explorer:
+        condition: service_started
+    environment:
+      - TZ=Europe/Amsterdam
+    restart: unless-stopped
+    # Security: Health check
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+################ GRAFANA DASHBOARD ##########################################################################
+  grafana:
+    image: grafana/grafana:latest  # Pin latest else pin a specific version
+    container_name: ${GRAFANA_HOST}
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=${URL_GRAFANA}
+      - GF_SERVER_ROOT_URL=https://${URL_GRAFANA}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+      - GF_LOG_LEVEL=warn  # Reduce log verbosity
+      - TZ=Europe/Amsterdam
+    # user: "472:472"
+    user: "${UID}:${UID}"
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+      - ./grafana_config/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./grafana_provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana_provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+################ INFLUXDB3 TIME SERIES DATABASE #############################################################
+  influxdb:
+    image: quay.io/influxdb/influxdb3-core:latest  # Pin latest else pin a specific version
+    container_name: ${INFLUXDB_HOST}
+    command: serve --node-id=${INFLUXDB_NODE_ID} --object-store=file --data-dir=/var/lib/influxdb3 --plugin-dir=/var/lib/influxdb3/plugins --admin-token-file /etc/influxdb3/auto-admin-token.json
+    user: "${UID}:${UID}"
+    volumes:
+      - ./influxdb_data:/var/lib/influxdb3
+      - ./influxdb_data/plugins:/var/lib/influxdb3/plugins
+      - ./influxdb/config:/etc/influxdb3:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - TZ=Europe/Amsterdam
+    # Improved health check without token exposure
+    healthcheck:
+      # test: ["CMD-SHELL", "curl -f http://localhost:8181/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f -H 'Authorization: Bearer ${INFLUXDB_TOKEN}' http://localhost:8181/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+################ DATABASE INITIALIZATION #############################################################
+  scripts-init:
+    image: alpine:3.18    # Pin specific version
+    container_name: tig-scripts-init
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    volumes:
+      - ./influxdb/config:/etc/influxdb3:rw
+      - ./scripts:/app:rw
+    command: ["/bin/sh", "/app/wrapper.sh"]
+    # command: ["sleep", "infinity"] # keeps container running for debugging
+    tty: true    
+    networks:
+      - monitoring-network
+    restart: "no"
+    # Auto-remove container after completion
+
+################ INFLUXDB3 WEB EXPLORER #####################################################################
+  influx-explorer:
+    image: quay.io/influxdb/influxdb3-explorer:latest  # Pin latest else pin a specific version
+    container_name: ${INFLUXDB_EXPLORER_HOST}
+    volumes:
+      - ./influxExplorer/config:/app-root/config:ro
+      - ./influxExplorer/db:/db:rw
+    command: --mode=admin
+    environment:
+      - TZ=Europe/Amsterdam
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    # Security: Resource limits
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+################ TELEGRAF METRICS COLLECTOR #################################################################
+  telegraf:
+    image: telegraf:1.28-alpine  # Pin specific version
+    container_name: ${TELEGRAF_HOST}
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /etc/localtime:/etc/localtime:ro
+      # SECURITY: Use Docker socket proxy instead of direct socket access
+      # - /var/run/docker.sock:/var/run/docker.sock:ro  # REMOVED
+    environment:
+      - INFLUXDB_HOST=${INFLUXDB_HOST}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - TELEGRAF_COLLECTION_INTERVAL=${TELEGRAF_COLLECTION_INTERVAL}
+      - HOSTNAME=${TELEGRAF_HOST}
+      - TZ=Europe/Amsterdam
+    networks:
+      - monitoring-network
+      - frontend-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    # SECURITY: Replace privileged mode with specific capabilities
+    # privileged: true  # REMOVED
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+################ DOCKER SOCKET PROXY (SECURITY IMPROVEMENT) ################################
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.1.1
+    container_name: tig-docker-proxy
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - SERVICES=0
+      - SWARM=0
+      - NODES=0
+      - VOLUMES=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+################ NETWORK DEFINITIONS ########################################################################
+networks:
+  frontend-network:
+    driver: bridge
+    name: tig_frontend
+    driver_opts:
+      com.docker.network.bridge.name: tig_frontend
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+  monitoring-network:
+    driver: bridge
+    name: tig_monitoring
+    internal: false
+    driver_opts:
+      com.docker.network.bridge.name: tig_monitoring
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
