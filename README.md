@@ -3,6 +3,12 @@
 A modern monitoring stack implementation using **Telegraf**, **InfluxDB 3**, and **Grafana** with **Nginx reverse proxy** and **InfluxDB Explorer** for comprehensive system monitoring and visualization.
 The key of this project is the **automated deployment**. It will setup a development environment in minutes instead of hours if not days.
 
+In a nutshell the deployment script conducts the following steps:
+- Creates all required directories and initialization scripts and files.
+- Creates an InfluxDB 3 Admin Token. The token is used to create a default database in InfluxDB 3. Configures Telegraf to use the token and to send metrics to the db.
+- Automatically connects Influx Explorer to the InfluxDB 3 Core container. 
+- Creates a Grafana InfluxDB Datasource and Dashboard. You can instantly view data!!
+
 ## Overview
 
 This project provides a complete TIG (Telegraf, InfluxDB, Grafana) stack deployment using Docker Compose, featuring:
