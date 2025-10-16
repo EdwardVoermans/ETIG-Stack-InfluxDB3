@@ -212,8 +212,8 @@ Docker Compose Start
    │                │
    ▼                ▼
 create-database  grafana-token
-   │            │
-   └────────────┘
+   │                │
+   └────────────────┘
          ↓
     Initialization Complete
     (Container Auto-Removes)
@@ -424,8 +424,3 @@ For issues and questions:
 - Review logs using `docker compose logs`
 - Consult the original project documentation
 - Contact: edward@voermans.com
-
----
-
-*Generated for TIG Stack v4.0.3*  
-*Last Updated: September 2025*
