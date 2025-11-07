@@ -9,8 +9,8 @@
 # Credits     : Suyash Joshi (sjoshi@influxdata.com) 
 #             : Github published https://github.com/InfluxCommunity/TIG-Stack-using-InfluxDB-3/tree/main
 # Created On  : 22-08-2025
-# Last Update : 30-09-2025
-# Version     : 4.2
+# Last Update : 07-10-2025
+# Version     : 4.4
 # Target      : tig-influx.test Development
 # Usage       :
 #   ./dev-setup-etig.sh [--regenerate-creds] 

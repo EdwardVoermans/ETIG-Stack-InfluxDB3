@@ -72,7 +72,7 @@ services:
 
 ################ INFLUXDB3 TIME SERIES DATABASE #############################################################
   influxdb:
-    image: quay.io/influxdb/influxdb3-core:latest  # Pin latest else pin a specific version
+    image: influxdb:3.6.0-core  # Pin latest else pin a specific version
     container_name: ${INFLUXDB_HOST}
     command: serve --node-id=${INFLUXDB_NODE_ID} --object-store=file --data-dir=/var/lib/influxdb3 --plugin-dir=/var/lib/influxdb3/plugins --admin-token-file /etc/influxdb3/auto-admin-token.json
     user: "${UID}:${UID}"
@@ -121,7 +121,7 @@ services:
 
 ################ INFLUXDB3 WEB EXPLORER #####################################################################
   influx-explorer:
-    image: quay.io/influxdb/influxdb3-explorer:latest  # Pin latest else pin a specific version
+    image: influxdata/influxdb3-ui:1.4.0  # Pin latest else pin a specific version
     container_name: ${INFLUXDB_EXPLORER_HOST}
     volumes:
       - ./influxExplorer/config:/app-root/config:ro

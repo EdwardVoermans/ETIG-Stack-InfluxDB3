@@ -1,26 +1,94 @@
-# TIG Stack using InfluxDB 3
+# ETIG-Stack InfluxDB3
 
-A modern monitoring stack implementation using **Telegraf**, **InfluxDB 3**, and **Grafana** with **Nginx reverse proxy** and **InfluxDB Explorer** for comprehensive system monitoring and visualization.
-The key of this project is the **automated deployment**. It will setup a development environment in minutes instead of hours if not days.
+## Introduction
 
-If you are looking for the **Kubernetes K3S version** check this: https://tinyurl.com/3889hkvr
+I started this project out of frustration.  
+As an IoT Solution Architect I deal a lot with data and visualization. Tons of sensors in tons of different projects require different (clean) sets of infrastructure components like InfluxDB and Grafana environments. And for **every** project I had to start over and repeat the deployment and configuration of the various components.
 
-In a nutshell the deployment script conducts the following steps:
-- Creates all required directories and initialization scripts and files.
-- Creates an InfluxDB 3 Admin Token. The token is used to create a default database in InfluxDB 3. Configures Telegraf to use the token and to send metrics to the db.
-- Automatically connects Influx Explorer to the InfluxDB 3 Core container. 
-- Creates a Grafana InfluxDB Datasource and Dashboard. You can instantly view data!!
+Then I stumbled upon a project by [Suyash Joshi](https://github.com/sjoshi) in the Influx Community area of GitHub: [TIG-Stack using InfluxDB 3](https://github.com/InfluxCommunity/TIG-Stack-using-InfluxDB-3).  
+I used his work as a starting point to build a completely — well, as much as possible — automated deployment of a fresh Docker Extended TIG environment.
+
+The components of this project are:
+
+- **InfluxDB 3 (Core)** – Time-series database for metrics and IoT data  
+- **Grafana** – Visualization and dashboarding platform  
+- **Telegraf** – Data collection agent  
+- **InfluxDB Explorer** – Web-based data explorer for InfluxDB  
+- **NGINX** – Reverse proxy to publish the portals
+
+With this stack I aim to reduce setup time from hours (or days) down to minutes — enabling anyone to spin up a clean, ready-to-use data environment for prototyping, testing, or demos.
+
+---
+
+## ⚡ Quick Start
+
+If you just want to spin up a working stack right away (**No guts, no glory**):
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/EdwardVoermans/ETIG-Stack-InfluxDB3.git
+cd ETIG-Stack-InfluxDB3
+
+# 2. Make the setup script executable
+chmod +x dev-setup-etig.sh
+
+# 3. (Optional) Adjust environment variables in the script
+vim dev-setup-etig.sh
+
+# 4. Generate configuration and .env
+./dev-setup-etig.sh
+
+# 5. Start the stack
+docker compose up -d
+```
+
+Then visit:
+
+- **Grafana:** https://tig-grafana.tig-influx.test 
+- **InfluxDB Explorer:** https://tig-explorer.tig-influx.test
+
+Add to your `/etc/hosts` (or local DNS server) if needed:
+
+```
+127.0.0.1 tig-influx.test 
+```
+
+That’s it — you now have a full InfluxDB 3 + Grafana + Telegraf environment up and running.  
+For more details, follow the complete guide below 👇
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Prerequisites](#prerequisites)
+4. [Clone the Repository](#clone-the-repository)
+5. [Configuration](#configuration)
+6. [Run the Setup Script](#run-the-setup-script)
+7. [Start the Stack](#start-the-stack)
+8. [Access the Portals](#access-the-portals)
+9. [Explore the Components](#explore-the-components)
+10. [Customization](#customization)
+11. [Production Considerations](#production-considerations)
+12. [Troubleshooting](#troubleshooting)
+13. [Directory Structure](#directory-structure)
+14. [Credits and License](#credits-and-license)
+
+---
 
 ## Overview
 
-This project provides a complete TIG (Telegraf, InfluxDB, Grafana) stack deployment using Docker Compose, featuring:
+**ETIG-Stack InfluxDB3** provides an automated Docker-based setup for a complete IoT-ready data infrastructure.  
+It eliminates repetitive manual steps by provisioning and wiring all required components with sensible defaults and optional self-signed certificates.
 
-- **InfluxDB 3**: Modern time-series database
-- **Telegraf**: Metrics collection agent
-- **Grafana**: Data visualization and dashboards
-- **InfluxDB Explorer**: Web-based database explorer
-- **Nginx**: Reverse proxy with SSL termination
-- **Automated Setup**: Complete environment configuration
+This environment is ideal for:
+- Prototyping IoT and sensor data projects  
+- Evaluating InfluxDB 3 Core and Grafana together  
+- Demonstrating end-to-end telemetry pipelines  
+- Rapid development of dashboards before production rollout  
+
+---
 
 ## Architecture
 
@@ -56,174 +124,254 @@ Internet/External Sensors
 │  └──────────────────┘      └──────────────────┘    │
 └────────────────────────────────────────────────────┘
 ```
+---
 
-## Features
+## Prerequisites
 
-- **Secure by Default**: Auto-generated SSL certificates and secure credentials
-- **Production Ready**: Health checks, logging, and resource limits
-- **Easy Setup**: Single script initialization
-- **Customizable**: Extensive configuration options via environment variables
-- **Modern Stack**: Latest versions of all components
+Before starting, make sure you have:
 
-## Quick Start
+- **Docker** & **Docker Compose** installed.  
+- **OpenSSL** (for certificate generation).  
+- A **bash shell** or compatible terminal.  
+- A machine or VM with at least **2 CPU / 4 GB RAM** I used a Raspberry Pi 4.
+- Internet connectivity for pulling container images.
 
-### Prerequisites
+---
 
-- Docker and Docker Compose installed
-- OpenSSL available for certificate generation
-- Bash shell environment
+## Clone the Repository
 
-### Installation
-
-1. **Clone or download the project files**
-   ```bash
-   # Ensure you have both files in the same directory:
-   # - dev-setup-etig.sh
-   # - docker-compose.yaml
-   ```
-
-2. **Run the setup script**
-   ```bash
-   chmod +x dev-setup-etig.sh
-   ./dev-setup-etig.sh
-   ```
-
-3. **Start the stack**
-   ```bash
-   docker compose up -d
-   ```
-
-4. **Access the services**
-   - **Grafana**: https://tig-grafana.tig-influx.test
-   - **InfluxDB Explorer**: https://tig-explorer.tig-influx.test
-
-### Host Configuration
-
-Add these entries to your `/etc/hosts` file:
+```bash
+git clone https://github.com/EdwardVoermans/ETIG-Stack-InfluxDB3.git
+cd ETIG-Stack-InfluxDB3
 ```
-127.0.0.1    tig-grafana.tig-influx.test
-127.0.0.1    tig-explorer.tig-influx.test
-Or modify your (internal) DNS Server(s) like PiHole.
-```
+
+![Repository Structure](docs/images/repo-structure.png)
+
+---
 
 ## Configuration
 
-### Environment Variables
+All environment variables are **generated automatically** by the setup script.  
+You **do not** need to manually create or copy a `.env` file.
 
-The setup script generates a comprehensive `.env` file with all necessary configuration. Key variables include:
+If you want to customize the default values (e.g., domain name, organization name, credentials, or certificate settings), open and modify the following script before running it:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TLD_DOMAIN` | Base domain | `tig-influx.test` |
-| `INFLUXDB_HOST` | InfluxDB container name | `tig-influxdb3` |
-| `INFLUXDB_BUCKET` | Default bucket name | `local_system` |
-| `GRAFANA_ADMIN_USER` | Grafana admin username | `admin` |
-| `TELEGRAF_COLLECTION_INTERVAL` | Metrics collection interval | `10s` |
+```
+vim dev-setup-etig.sh
+```
 
-### Credential Management
+You’ll find a section (#### First step, set VARs #####) inside the script with variables such as:
 
-- Secure credentials are auto-generated and stored in `.credentials`
-- Use `--regenerate-creds` flag to force new credential generation
-- Default Grafana admin password is automatically generated
+```bash
+    ##### General
+    export TLD_DOMAIN=tig-influx.test
+    ##### NGINX Configuration
+    export NGINX_HOST=tig-nginx
+    export URL_GRAFANA=tig-grafana.tig-influx.test
+    export URL_INFLUXDB_EXPLORER=tig-explorer.tig-influx.test
+    export CERT_CRT=tig-influx.test.crt
+    export CERT_KEY=tig-influx.test.key
+```
+Adjust these to match your environment or project requirements.
+![Edit Setup Script](docs/images/edit-setup-script.png)
 
-### SSL Certificates
+> 💡 The script will generate a `.env` file automatically based on these settings, which Docker Compose uses for the actual deployment.
 
-- Self-signed certificates are automatically generated for development
-- Certificates include proper Subject Alternative Names (SAN)
-- Replace with CA-signed certificates for production use
+---
 
-## Services
+## Run the Setup Script
 
-### InfluxDB 3
-- **Container**: `tig-influxdb3`
-- **Port**: 8181 (internal)
-- **Data**: Persisted in `./influxdb_data`
-- **Config**: `./influxdb/config/`
+Make sure the setup script is executable:
 
-### Telegraf
-- **Container**: `tig-telegraf`
-- **Metrics**: System CPU, memory, disk, network
-- **Config**: `./telegraf/telegraf.conf`
-- **Interval**: 10 seconds (configurable)
+```bash
+chmod +x dev-setup-etig.sh
+```
 
-### Grafana
-- **Container**: `tig-grafana`
-- **Port**: 3000 (internal)
-- **Data**: Persisted in `./grafana_data`
-- **Config**: `./grafana_config/grafana.ini`
-- **Provisioning**: Automatic datasource and dashboard setup
+Then run:
 
-### InfluxDB Explorer
-- **Container**: `tig-explorer`
-- **Port**: 80 (internal)
-- **Purpose**: Web-based database exploration and querying
+```bash
+./dev-setup-etig.sh
+```
 
-### Nginx
-- **Container**: `tig-nginx`
-- **Ports**: 80 (redirect), 443 (HTTPS)
-- **SSL**: Automatic certificate management
-- **Features**: Rate limiting, security headers, compression
+This script will:
 
-## Initialization Scripts
+- Create required directories (`data`, `config`, `certs`, etc.)
+- Generate TLS certificates (self-signed)
+- Create secure credentials
+- Generate the `.env` file
+- Prepare Docker Compose configuration
 
-The stack includes automated initialization scripts that run on first deployment:
+![Setup Script Output](docs/images/setup-output01.png)
+![Setup Script Output](docs/images/setup-output02.png)
+---
 
-### wrapper.sh
+## Start the Stack
+
+Launch all services in the background:
+
+```bash
+docker compose up -d
+```
+
+Docker will download the images and start:
+
+- InfluxDB 3 Core  
+- Grafana  
+- Telegraf  
+- InfluxDB Explorer  
+- Alpine (to run init scripts)
+- NGINX reverse proxy  
+
+Monitor startup logs:
+```bash
+docker compose logs -f
+```
+Show all running containers:
+```bash
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+```
+![Docker Containers Running](docs/images/docker-containers.png)
+
+---
+
+## Access the Portals
+
+Once running, open your browser and navigate to:
+
+| Service | URL |
+|----------|-----|
+| Grafana | `https://tig-grafana.tig-influx.test` |
+| InfluxDB Explorer | `https://tig-explorer.tig-influx.test` |
+
+If you’re running locally without DNS, add an entry in `/etc/hosts`, for example:
+Or modify your internal DNS server and add the records pointing the tig-grafana.tig-influx.test and tig-explorer.tig-influx.test to the Docker Host Ip-Address.
+This would be the prefered way.
+```
+127.0.0.1 tig-influx.test
+```
+Obviously you will get a certificate error when connecting because we use a self-signed certificate. 
+And remember that you can find the Grafana password in the .credentials file!!
+![Credentials created](docs/images/credentials.png)
+
+Access Grafana: ![Grafana Login](docs/images/grafana-login.png)  
+Access Influx Explorer: ![InfluxDB Explorer Home](docs/images/influxdb-explorer.png)
+
+---
+
+## Explore the Components
+
+### **InfluxDB 3 Core**
+A modern, high-performance time-series database for ingesting and querying metrics, sensor, and IoT data.  
+Stored data is accessible via SQL, InfluxQL, or Flux.
+In the setup script we created a database ```local_system``` and created a ```telegraf.conf``` that sends system data to the database.  
+
+![InfluxDB Explorer Query](docs/images/influxdb-query.png)
+
+### **Telegraf**
+Lightweight metrics agent preconfigured to collect system and container metrics.  
+You can extend it by editing the Telegraf configuration under `./telegraf/config/`.
+
+![Telegraf Config Example](docs/images/telegraf-config.png)
+
+### **Grafana**
+Pre-provisioned with:
+- Data source: InfluxDB 3
+- Example dashboard with visualization from telegraf data
+- A preconfigured Grafana Service Account and Grafana Token (listed in ```.credentials```)
+Dashboards are stored under `grafana_provisioning/dashboards/`.
+
+![Grafana Data Source](docs/images/grafana-datasource.png)
+![Grafana Dashboard](docs/images/grafana-dashboard.png)
+![Grafana Dashboard TIG-Stack using InfluxDB3](docs/images/grafana-dashboard-TIG-Stack-using-InfluxDB3.png)
+![Grafana Dashboard](docs/images/grafana-sa.png)
+![Grafana Dashboard](docs/images/grafana-sa-token.png)
+
+### **InfluxDB Explorer**
+A graphical interface to browse, query, and inspect data stored in InfluxDB 3.
+
+### **Alpine - Scripts Init**
+A container `tig-scripts-init` (runs once, auto-removes on completion) that runs scripts when target containers are running and healthy 
+### - wrapper.sh
 Main orchestration script that executes initialization tasks in sequence:
 - Runs `create-database.sh` to initialize the InfluxDB database
 - Runs `grafana-token.sh` to set up Grafana authentication
-
-**Container**: `tig-scripts-init` (runs once, auto-removes on completion)
-
-### create-database.sh
+### - create-database.sh
 Automated InfluxDB database creation script that:
 - Installs required tools (curl, jq) in the Alpine container
 - Extracts authentication token from `/etc/influxdb3/auto-admin-token.json`
 - Waits for InfluxDB to become healthy (configurable timeout)
-- Creates the initial database bucket using InfluxDB 3 API
+- Creates the initial database `local_system` (configured via `INFLUXDB_BUCKET`)
 - Handles error cases (already exists, authentication failures, etc.)
 - Provides detailed logging of the creation process
 
-**Default Database**: `local_system` (configured via `INFLUXDB_BUCKET`)
-
-### grafana-token.sh
+### - grafana-token.sh
 Grafana Service Account and API token creation script that:
 - Installs required tools if not already installed (curl, jq)
 - Waits for Grafana to become healthy before proceeding
 - Tests authentication with admin credentials
 - Creates a Grafana Service Account with Admin role
 - Generates an API token for the service account
-- Stores the token securely in `/app/grafana_SA_Token` with metadata
+- Stores the token in .credentials
 - Exports `GRAFANA_API_TOKEN` environment variable for subsequent use
 
-**Service Account**: `tig-grafana-sa` (configured via `GRAFANA_SA_NAME`)  
-**Token Name**: `tig-grafana-sa-token` (configured via `GRAFANA_TOKEN_NAME`)
+![tig-scripts-init - log](docs/images/docker-logs-scripts-init.png)
 
-### Script Execution Flow
+### **NGINX**
+Acts as a reverse proxy in front of Grafana and InfluxDB Explorer, managing HTTPS and path routing.
 
+---
+
+## Customization
+
+- To add your own dashboards, place JSON files into  
+  `grafana_provisioning/dashboards/`
+- To add additional data sources, edit  
+  `grafana_provisioning/datasources/`
+- To regenerate credentials or certificates, rerun:  
+  ```bash
+  ./dev-setup-etig.sh --regenerate-creds
+  ```
+
+![Grafana Provisioning Folder](docs/images/grafana-provisioning.png)
+
+---
+
+## Production Considerations
+
+For production or shared environments:
+
+1. Replace self-signed certs with valid CA-issued certificates.
+2. Set stronger passwords and secrets in the `dev-setup-etig.sh` script.
+3. Configure persistent storage volumes and regular backups.
+4. Limit external access to ports using firewalls or VPN.
+5. Enable automatic container restarts (`restart: unless-stopped` in compose).
+
+---
+
+## Troubleshooting
+
+| Issue | Possible Cause | Solution |
+|--------|----------------|-----------|
+| `502 Bad Gateway` | NGINX couldn’t reach backend | Check if Grafana/Explorer containers are running |
+| SSL warning in browser | Self-signed certificate | Use trusted CA or import cert manually |
+| Grafana login fails | Incorrect creds | Check generated `.env` file and restart |
+| No data in dashboards | Telegraf not collecting | Check Telegraf logs via `docker compose logs telegraf` |
+
+Useful commands:
+```bash
+docker compose ps
+docker compose logs <service>
+docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+docker image ls
+docker exec -it <container> bash
 ```
-Docker Compose Start
-        ↓
-    InfluxDB Healthy
-        ↓
-  scripts-init Container
-        ↓
-    wrapper.sh
-        ↓
-   ┌────────────────┐
-   │                │
-   ▼                ▼
-create-database  grafana-token
-   │                │
-   └────────────────┘
-         ↓
-    Initialization Complete
-    (Container Auto-Removes)
-```
+
+---
 
 ## Directory Structure
 
 ```
+ETIG-Stack-InfluxDB3/
 ├── dev-setup-etig.sh         # Setup script
 ├── .env                      # Environment variables 
 ├── .credentials              # Secure credentials 
@@ -263,166 +411,20 @@ create-database  grafana-token
      └── telegraf.conf
 ```
 
-## Management
+![Folder Structure After Setup](docs/images/folder-structure.png)
 
-### Starting Services
-```bash
-docker compose up -d
-```
+---
 
-### Stopping Services
-```bash
-docker compose down
-```
+## Credits and License
 
-### Viewing Logs
-```bash
-# All services
-docker compose logs -f
+This project was inspired by  
+**[Suyash Joshi’s TIG-Stack using InfluxDB 3](https://github.com/InfluxCommunity/TIG-Stack-using-InfluxDB-3)**  
+from the Influx Community.
 
-# Specific service
-docker compose logs -f grafana
-```
+Developed and maintained by **Edward Voermans**.  
+Licensed under the [MIT License](LICENSE).
 
-### Health Checks
-```bash
-# Check service status
-docker compose ps
+---
 
-# Individual health checks
-docker compose exec nginx nginx -t
-curl -k https://tig-grafana.tig-influx.test/api/health
-```
-
-### Updating Configuration
-```bash
-# Regenerate credentials and certificates
-./tessie-dev-setup-tig.sh --regenerate-creds
-
-# Restart affected services
-docker compose restart
-```
-
-## Security Features
-
-### Network Security
-- Isolated Docker networks (frontend/monitoring)
-- Docker socket proxy for secure container access
-- No privileged containers
-
-### SSL/TLS
-- Modern TLS 1.2/1.3 only
-- Secure cipher suites
-- HSTS headers
-- Self-signed certificates for development
-
-### Access Control
-- Rate limiting on all endpoints
-- Security headers (CSP, XSS protection, etc.)
-- Secure credential generation and storage
-- No default passwords
-
-## Troubleshooting
-
-### Common Issues
-
-**Certificate Warnings**
-- Expected for self-signed certificates
-- Add certificates to browser trust store for development
-
-**Permission Errors**
-- Ensure proper ownership: `chown -R $(id -u):$(id -g) .`
-- Check directory permissions in setup script output
-
-**Service Health Check Failures**
-- Check logs: `docker compose logs [service-name]`
-- Verify network connectivity between containers
-- Ensure all required environment variables are set
-
-**Database Connection Issues**
-- Verify InfluxDB is healthy: `docker compose ps`
-- Check token configuration in datasources
-- Review InfluxDB logs for authentication errors
-
-### Debugging
-
-```bash
-# Enable debug logging
-docker compose logs --tail=100 -f
-
-# Access container shells
-docker compose exec grafana /bin/bash
-docker compose exec influxdb /bin/bash
-
-# Test network connectivity
-docker compose exec telegraf ping influxdb
-docker compose exec grafana ping influxdb
-```
-
-## Development
-
-### Customization
-
-**Modify Environment Variables**
-```bash
-# Edit .env file
-vim .env
-
-# Restart services
-docker compose restart
-```
-
-**Update Configurations**
-```bash
-# Edit service configs
-vim telegraf/telegraf.conf
-vim grafana_config/grafana.ini
-
-# Restart specific service
-docker compose restart telegraf
-```
-
-**Add Custom Dashboards**
-- Place JSON files in `./grafana_provisioning/dashboards/`
-- Restart Grafana: `docker compose restart grafana`
-
-### Production Deployment
-
-For production use:
-
-1. **Replace SSL Certificates**
-   - Obtain CA-signed certificates
-   - Update certificate paths in nginx configuration
-
-2. **Secure Network Access**
-   - Bind ports to localhost: `127.0.0.1:443:443`
-   - Use proper firewall rules
-   - Implement VPN or authenticated access
-
-3. **Resource Management**
-   - Add resource limits to docker-compose.yaml
-   - Implement log rotation
-   - Monitor disk usage
-
-4. **Backup Strategy**
-   - Regular backup of `./grafana_data`
-   - InfluxDB data backup procedures
-   - Configuration backup
-
-## Authors and Credits
-
-- **Author**: Edward Voermans (edward@voermans.com)
-- **Credits**: Based on work by Suyash Joshi (sjoshi@influxdata.com)
-- **Source**: [TIG-Stack-using-InfluxDB-3](https://github.com/InfluxCommunity/TIG-Stack-using-InfluxDB-3)
-
-## License
-
-This project builds upon MIT license.
-
-## Support
-
-For issues and questions:
-- Check the troubleshooting section above
-- Review logs using `docker compose logs`
-- Consult the original project documentation
-- Contact: edward@voermans.com
+*If this project saves you time or helps you prototype faster, please ⭐ star the repo or open an issue/PR — contributions and feedback are always welcome!*
+*And, by the way, if you are looking for the **Kubernetes K3S version** check this: https://tinyurl.com/3889hkvr *
