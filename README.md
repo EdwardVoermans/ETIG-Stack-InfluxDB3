@@ -133,7 +133,7 @@ Before starting, make sure you have:
 - **Docker** & **Docker Compose** installed.  
 - **OpenSSL** (for certificate generation).  
 - A **bash shell** or compatible terminal.  
-- A machine or VM with at least **2 CPU / 4 GB RAM** I used a Raspberry Pi 4.
+- A machine or VM with preferably **2 CPU / 4 GB RAM** However I used a Raspberry Pi 4, works fine.
 - Internet connectivity for pulling container images.
 
 ---
@@ -230,6 +230,7 @@ Show all running containers:
 ```bash
 docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
+
 ![Docker Containers Running](docs/images/docker-containers.png)
 
 ---
@@ -251,10 +252,11 @@ This would be the prefered way.
 ```
 Obviously you will get a certificate error when connecting because we use a self-signed certificate. 
 And remember that you can find the Grafana password in the .credentials file!!
+
 ![Credentials created](docs/images/credentials.png)
 
-Access Grafana: ![Grafana Login](docs/images/grafana-login.png)  
-Access Influx Explorer: ![InfluxDB Explorer Home](docs/images/influxdb-explorer.png)
+Access The Grafana Portal: ![Grafana Login](docs/images/grafana-login.png)  
+Access Influx Explorer Portal: ![InfluxDB Explorer Home](docs/images/influxdb-explorer.png)
 
 ---
 
@@ -322,7 +324,9 @@ Acts as a reverse proxy in front of Grafana and InfluxDB Explorer, managing HTTP
 ---
 
 ## Customization
-
+Remember that you have a dual approach to modify, adjust, add or delete functionality into this stack. 
+Just learn and familiar yourself with the way the ```dev-setup-etig.sh```script works. Add your new dashboards, data sources, nginx stuff, etc. in the script.
+Or . . . adjust the environment in the environment:
 - To add your own dashboards, place JSON files into  
   `grafana_provisioning/dashboards/`
 - To add additional data sources, edit  
@@ -332,8 +336,6 @@ Acts as a reverse proxy in front of Grafana and InfluxDB Explorer, managing HTTP
   ./dev-setup-etig.sh --regenerate-creds
   ```
 
-![Grafana Provisioning Folder](docs/images/grafana-provisioning.png)
-
 ---
 
 ## Production Considerations
@@ -341,8 +343,8 @@ Acts as a reverse proxy in front of Grafana and InfluxDB Explorer, managing HTTP
 For production or shared environments:
 
 1. Replace self-signed certs with valid CA-issued certificates.
-2. Set stronger passwords and secrets in the `dev-setup-etig.sh` script.
-3. Configure persistent storage volumes and regular backups.
+2. Set stronger passwords and secrets.
+3. Configure persistent storage volumes and do regular backups.
 4. Limit external access to ports using firewalls or VPN.
 5. Enable automatic container restarts (`restart: unless-stopped` in compose).
 
@@ -355,7 +357,7 @@ For production or shared environments:
 | `502 Bad Gateway` | NGINX couldn’t reach backend | Check if Grafana/Explorer containers are running |
 | SSL warning in browser | Self-signed certificate | Use trusted CA or import cert manually |
 | Grafana login fails | Incorrect creds | Check generated `.env` file and restart |
-| No data in dashboards | Telegraf not collecting | Check Telegraf logs via `docker compose logs telegraf` |
+| No data in dashboards | Telegraf not collecting | Check Telegraf logs via `docker logs tig-telegraf` |
 
 Useful commands:
 ```bash
@@ -411,7 +413,7 @@ ETIG-Stack-InfluxDB3/
      └── telegraf.conf
 ```
 
-![Folder Structure After Setup](docs/images/folder-structure.png)
+![Folder Structure After Setup](docs/images/dirlist-script-completed.png)
 
 ---
 
@@ -427,4 +429,5 @@ Licensed under the [MIT License](LICENSE).
 ---
 
 *If this project saves you time or helps you prototype faster, please ⭐ star the repo or open an issue/PR — contributions and feedback are always welcome!*
-*And, by the way, if you are looking for the **Kubernetes K3S version** check this: https://tinyurl.com/3889hkvr *
+
+And, by the way, if you are looking for the automated **Kubernetes K3S version** I created check this: https://tinyurl.com/3889hkvr 
