@@ -18,11 +18,14 @@ The components of this project are:
 
 With this stack I aim to reduce setup time from hours (or days) down to minutes — enabling anyone to spin up a clean, ready-to-use data environment for prototyping, testing, or demos.
 
+## Alternative versions:
+- Looking for the **multi-node Kubernetes version?** Check: https://tinyurl.com/3889hkvr
+- Looking for the **single-node Kubernetes version**? Check: https://tinyurl.com/42z9f9n5
 ---
 
 ## ⚡ Quick Start
 
-If you just want to spin up a working stack right away (**No guts, no glory**):
+If you just want to spin up a working stack right away (Remember: **No guts, no glory**):
 
 ```bash
 # 1. Clone the repo
@@ -430,4 +433,3 @@ Licensed under the [MIT License](LICENSE).
 
 *If this project saves you time or helps you prototype faster, please ⭐ star the repo or open an issue/PR — contributions and feedback are always welcome!*
 
-And, by the way, if you are looking for the automated **Kubernetes K3S version** I created check this: https://tinyurl.com/3889hkvr 
